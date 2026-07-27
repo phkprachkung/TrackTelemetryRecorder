@@ -97,12 +97,25 @@ class CameraManager @Inject constructor() {
 
         val executor = mainExecutor ?: ContextCompat.getMainExecutor(context)
 
-        activeRecording = capture.output
+        val pendingRecording = capture.output
             .prepareRecording(context, mediaStoreOutputOptions)
-            .withAudioEnabled()
-            .start(executor) { event ->
-                onEvent(event)
+
+        val hasAudioPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.RECORD_AUDIO
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (hasAudioPermission) {
+            try {
+                pendingRecording.withAudioEnabled()
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+        }
+
+        activeRecording = pendingRecording.start(executor) { event ->
+            onEvent(event)
+        }
     }
 
     fun stopRecording() {

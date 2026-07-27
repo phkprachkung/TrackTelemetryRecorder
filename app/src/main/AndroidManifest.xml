@@ -29,6 +29,11 @@
         android:theme="@style/Theme.TrackTelemetryRecorder"
         tools:targetApi="35">
         
+        <service
+            android:name=".service.RecordingForegroundService"
+            android:foregroundServiceType="camera|location"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

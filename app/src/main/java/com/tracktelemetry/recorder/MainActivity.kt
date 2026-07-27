@@ -57,11 +57,8 @@ fun AppNavigation() {
             onBackToMenuClick = { currentScreen = Screen.HOME }
         )
         Screen.SETTINGS -> {
-            // Placeholder for Settings
-            HomeScreen(
-                onStartTrackClick = { currentScreen = Screen.DASHBOARD },
-                onSettingsClick = { currentScreen = Screen.SETTINGS },
-                onHistoryClick = { currentScreen = Screen.HISTORY }
+            com.tracktelemetry.recorder.presentation.settings.SettingsScreen(
+                onBackClick = { currentScreen = Screen.HOME }
             )
         }
         Screen.HISTORY -> {

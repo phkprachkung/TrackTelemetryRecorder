@@ -111,6 +111,7 @@ class DashboardViewModel @Inject constructor(
         cameraManager.startRecording(context) { event ->
             when (event) {
                 is VideoRecordEvent.Start -> {
+                    com.tracktelemetry.recorder.service.RecordingForegroundService.startService(context)
                     _uiState.update {
                         it.copy(
                             isRecording = true,
@@ -122,6 +123,7 @@ class DashboardViewModel @Inject constructor(
                     startTimer()
                 }
                 is VideoRecordEvent.Finalize -> {
+                    com.tracktelemetry.recorder.service.RecordingForegroundService.stopService(context)
                     stopTimer()
                     csvWriter?.stopSession()
                     csvWriter = null
