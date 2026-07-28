@@ -3,7 +3,6 @@ package com.tracktelemetry.recorder.presentation.dashboard
 import android.Manifest
 import android.content.Context
 import android.os.Build
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
@@ -20,12 +19,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.FiberManualRecord
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,17 +51,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tracktelemetry.recorder.presentation.common.GForceGauge
-import com.tracktelemetry.recorder.presentation.common.SpeedometerGauge
-import com.tracktelemetry.recorder.presentation.common.TrackMapGauge
 import com.tracktelemetry.recorder.presentation.theme.DarkAsphalt
 import com.tracktelemetry.recorder.presentation.theme.DarkGrayPanel
 import com.tracktelemetry.recorder.presentation.theme.DialWhite
 import com.tracktelemetry.recorder.presentation.theme.MotorsportRed
-import java.util.Locale
 
 @Composable
 fun DashboardScreen(
     onBackToMenuClick: () -> Unit,
+    onStartRecording: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -93,12 +89,6 @@ fun DashboardScreen(
 
     LaunchedEffect(Unit) {
         permissionLauncher.launch(requiredPermissions)
-    }
-
-    LaunchedEffect(uiState.lastRecordedUri) {
-        uiState.lastRecordedUri?.let { uri ->
-            Toast.makeText(context, "Video & CSV Saved to Gallery!", Toast.LENGTH_LONG).show()
-        }
     }
 
     Surface(
@@ -132,135 +122,94 @@ fun DashboardScreen(
                     )
                 }
 
-                // Top HUD Status Bar
-                TopHudHeader(
-                    isRecording = uiState.isRecording,
-                    durationSeconds = uiState.durationSeconds,
-                    statusText = uiState.statusText,
-                    onBackClick = onBackToMenuClick,
+                // UI Overlay based on wireframe
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(16.dp)
-                )
-
-                // Bottom Left Telemetry Overlay Gauges (Speed + G-Force + Real GPS Minimap)
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.Bottom
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    SpeedometerGauge(speedKmh = uiState.speedKmh)
-                    GForceGauge(gLat = uiState.gLat, gLong = uiState.gLong)
-                    TrackMapGauge(
-                        latitude = uiState.latitude,
-                        longitude = uiState.longitude,
-                        gpsHistory = uiState.gpsHistory
-                    )
+                    
+                    // ── Top Bar ───────────────────────────────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = onBackToMenuClick) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = DialWhite)
+                            }
+                            Text("[🔙 Back]", color = DialWhite, fontSize = 14.sp)
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { /* Flip Camera */ }) {
+                                Icon(Icons.Default.Cameraswitch, contentDescription = "Flip Cam", tint = DialWhite)
+                            }
+                            Text("[📷 Flip Cam]", color = DialWhite, fontSize = 14.sp)
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { /* Video Res */ }) {
+                                Icon(Icons.Default.Settings, contentDescription = "Video Res", tint = DialWhite)
+                            }
+                            Text("[⚙️ Video Res]", color = DialWhite, fontSize = 14.sp)
+                        }
+                    }
+
+                    // ── Middle Section ────────────────────────────────────
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Left Info Box
+                        Column(
+                            modifier = Modifier
+                                .border(1.dp, Color.White.copy(alpha = 0.5f))
+                                .background(DarkGrayPanel.copy(alpha = 0.7f))
+                                .padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("SPEED: ${uiState.speedKmh.toInt()} km/h", color = DialWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("LAP: 00:00.00", color = DialWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        // G-Force Meter in center (adjusting layout a bit to fit it between the two)
+                        Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                            GForceGauge(gLat = uiState.gLat, gLong = uiState.gLong)
+                        }
+
+                        // Right Status Badges
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            Text("[📍 GPS: OK 10Hz]", color = DialWhite, fontSize = 14.sp, modifier = Modifier.background(DarkGrayPanel.copy(alpha = 0.7f)).padding(4.dp))
+                            Text("[🔌 OBD: Active]", color = DialWhite, fontSize = 14.sp, modifier = Modifier.background(DarkGrayPanel.copy(alpha = 0.7f)).padding(4.dp))
+                        }
+                    }
+
+                    // ── Bottom Section ────────────────────────────────────
+                    Button(
+                        onClick = onStartRecording,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = DarkGrayPanel)
+                    ) {
+                        Text(
+                            "[🔴 START RECORDING]",
+                            color = DialWhite,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 2.sp
+                        )
+                    }
                 }
-
-                // Right Side Record Control Panel
-                RightControlPanel(
-                    isRecording = uiState.isRecording,
-                    onRecordToggle = { viewModel.toggleRecording(context) },
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .padding(24.dp)
-                )
             }
-        }
-    }
-}
-
-@Composable
-fun TopHudHeader(
-    isRecording: Boolean,
-    durationSeconds: Long,
-    statusText: String,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(DarkGrayPanel.copy(alpha = 0.85f))
-            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to Menu",
-                    tint = DialWhite
-                )
-            }
-            Spacer(modifier = Modifier.width(6.dp))
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .clip(CircleShape)
-                    .background(if (isRecording) MotorsportRed else Color.Gray)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = statusText,
-                color = DialWhite,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
-        }
-
-        Text(
-            text = formatDuration(durationSeconds),
-            color = if (isRecording) MotorsportRed else DialWhite,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        )
-
-        Text(
-            text = "1080P • 60FPS",
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-fun RightControlPanel(
-    isRecording: Boolean,
-    onRecordToggle: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        IconButton(
-            onClick = onRecordToggle,
-            modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(if (isRecording) MotorsportRed else Color.White)
-                .border(3.dp, MotorsportRed, CircleShape)
-        ) {
-            Icon(
-                imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.FiberManualRecord,
-                contentDescription = if (isRecording) "Stop Recording" else "Start Recording",
-                tint = if (isRecording) Color.White else MotorsportRed,
-                modifier = Modifier.size(36.dp)
-            )
         }
     }
 }
@@ -300,10 +249,4 @@ fun PermissionRequestPlaceholder(onGrantClick: () -> Unit) {
             Text("Grant Permissions", color = Color.White)
         }
     }
-}
-
-private fun formatDuration(seconds: Long): String {
-    val mins = seconds / 60
-    val secs = seconds % 60
-    return String.format(Locale.US, "%02d:%02d", mins, secs)
 }
