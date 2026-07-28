@@ -11,6 +11,7 @@ import com.tracktelemetry.recorder.data.sensors.LocationTelemetry
 import com.tracktelemetry.recorder.data.sensors.MotionDataSource
 import com.tracktelemetry.recorder.data.sensors.MotionTelemetry
 import com.tracktelemetry.recorder.data.telemetry.TelemetryCsvWriter
+import com.tracktelemetry.recorder.presentation.common.GpsPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
@@ -33,7 +34,10 @@ data class DashboardUiState(
     val gLat: Float = 0f,
     val gLong: Float = 0f,
     val gVert: Float = 0f,
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
     val gpsAccuracy: Float = 0f,
+    val gpsHistory: List<GpsPoint> = emptyList(),
     val lastRecordedUri: Uri? = null,
     val statusText: String = "READY",
     val errorMessage: String? = null
@@ -66,17 +70,25 @@ class DashboardViewModel @Inject constructor(
             ) { loc, motion ->
                 Pair(loc, motion)
             }.collect { (loc, motion) ->
-                _uiState.update {
-                    it.copy(
+                _uiState.update { currentState ->
+                    val updatedHistory = if (loc.latitude != 0.0 && loc.longitude != 0.0) {
+                        (currentState.gpsHistory + GpsPoint(loc.latitude, loc.longitude)).takeLast(200)
+                    } else {
+                        currentState.gpsHistory
+                    }
+
+                    currentState.copy(
                         speedKmh = loc.speedKmh,
                         gLat = motion.gLat,
                         gLong = motion.gLong,
                         gVert = motion.gVert,
-                        gpsAccuracy = loc.accuracy
+                        latitude = loc.latitude,
+                        longitude = loc.longitude,
+                        gpsAccuracy = loc.accuracy,
+                        gpsHistory = updatedHistory
                     )
                 }
 
-                // If currently recording, write telemetry row to CSV
                 if (_uiState.value.isRecording) {
                     csvWriter?.writeRow(
                         latitude = loc.latitude,

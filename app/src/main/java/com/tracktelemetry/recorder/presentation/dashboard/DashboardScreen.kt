@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,7 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Videocam
@@ -55,6 +54,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tracktelemetry.recorder.presentation.common.GForceGauge
 import com.tracktelemetry.recorder.presentation.common.SpeedometerGauge
+import com.tracktelemetry.recorder.presentation.common.TrackMapGauge
 import com.tracktelemetry.recorder.presentation.theme.DarkAsphalt
 import com.tracktelemetry.recorder.presentation.theme.DarkGrayPanel
 import com.tracktelemetry.recorder.presentation.theme.DialWhite
@@ -144,16 +144,21 @@ fun DashboardScreen(
                         .padding(16.dp)
                 )
 
-                // Bottom Left Telemetry Overlay Gauges (Speed + G-Force)
+                // Bottom Left Telemetry Overlay Gauges (Speed + G-Force + Real GPS Minimap)
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomStart)
-                        .padding(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {
                     SpeedometerGauge(speedKmh = uiState.speedKmh)
                     GForceGauge(gLat = uiState.gLat, gLong = uiState.gLong)
+                    TrackMapGauge(
+                        latitude = uiState.latitude,
+                        longitude = uiState.longitude,
+                        gpsHistory = uiState.gpsHistory
+                    )
                 }
 
                 // Right Side Record Control Panel
@@ -180,9 +185,9 @@ fun TopHudHeader(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(DarkGrayPanel.copy(alpha = 0.8f))
+            .background(DarkGrayPanel.copy(alpha = 0.85f))
             .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -192,12 +197,12 @@ fun TopHudHeader(
                 modifier = Modifier.size(36.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back to Menu",
                     tint = DialWhite
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             Box(
                 modifier = Modifier
                     .size(12.dp)
